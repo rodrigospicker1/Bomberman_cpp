@@ -72,6 +72,7 @@ int main()
     bool tempo = false;
     int x = 1;
     int y = 1;
+    int vivo = true;
 
 
     int matriz[linhas][colunas]=
@@ -93,7 +94,7 @@ int main()
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     };
 
-    while(true){
+    while(vivo){
         ///Posiciona a escrita no início do console
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 
@@ -101,13 +102,14 @@ int main()
         for(int i=0;i<linhas;i++){
             for(int j=0;j<colunas;j++){
                 if(i==x && j==y){
-                    cout<<char(2); //personagem
+                    cout<< GREEN <<char(2)<<RESET; //personagem
                 } else {
                     switch (matriz[i][j]){
                         case 0: cout<< GREEN <<char(219)<<RESET; break; //caminho
-                        case 1: cout<<char(219); break; //parede
+                        case 1: cout<<char(219)<<RESET; break; //parede
                         case 2: cout<< BLUE <<char(219)<<RESET; break; //parede frágil
-                        case 4: cout<< RED <<char(219)<<RESET; break; //parede frágil
+                        case 4: cout<< RED <<char(219)<<RESET; break; //bomba
+                        case 5: cout<< YELLOW <<char(219)<<RESET; break; //explode
                         //default: cout<<"-"; //erro
                     } //fim switch
                 }
@@ -141,13 +143,72 @@ int main()
                     }
                 break;
                 case 32: case 'space': ///bomba
-                    matriz[x][y] = 4;
+                    if(tempo == false){
+                        matriz[x][y] = 4;
+                        inicio = clock();
+                        tempo = true;
+                    }
                 break;
+
             }
          }
 
+         if (tempo==true) {
+            fim = clock();
+            if ((fim-inicio)/CLOCKS_PER_SEC == 3) {
+                //Aperece o amarelo no raio de destruição
+                for(int i=0;i<linhas;i++){
+                    for(int j=0;j<colunas;j++){
+                        if(matriz[i][j] == 4){
+                            if(matriz[i-1][j] != 1){
+                                matriz[i-1][j] =  5;
+                                if(matriz[i-2][j] != 1){
+                                    matriz[i-2][j] =  5;
+                                }
+                            }
+                            if(matriz[i+1][j] != 1){
+                                matriz[i+1][j] =  5;
+                                if(matriz[i+2][j] != 1){
+                                    matriz[i+2][j] =  5;
+                                }
+                            }
+                            if(matriz[i][j-1] != 1){
+                                matriz[i][j-1] =  5;
+                                if(matriz[i][j-1] != 1){
+                                    matriz[i][j-1] =  5;
+                                }
+                            }
+                            if(matriz[i][j+1] != 1){
+                                matriz[i][j+1] =  5;
+                                if(matriz[i][j+2] != 1){
+                                    matriz[i][j+2] =  5;
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+            if ((fim-inicio)/CLOCKS_PER_SEC == 4) {
+                //Volta para o fundo normal
+                for(int i=0;i<linhas;i++){
+                    for(int j=0;j<colunas;j++){
+                        if(matriz[i][j] == 4 || matriz[i][j] == 5){
+                            matriz[i][j] = 0;
+                            if(i == x && j == y){
+                                vivo = false;
+                            }
+                        }
+                    }
+                }
+                tempo=false;
+            }
+        }
+
 
     } //fim do laço do jogo
+    system("cls");
+    cout<<"Game over";
 
     return 0;
 } //fim main
