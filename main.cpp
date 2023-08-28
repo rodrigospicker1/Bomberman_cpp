@@ -48,6 +48,7 @@ int constroiMatriz(int **matriz[linhas][colunas]){
 
 int main()
 {
+    setlocale(LC_ALL, "portuguese");
     ///ALERTA: N�O MODIFICAR O TRECHO DE C�DIGO, A SEGUIR.
         //INICIO: COMANDOS PARA QUE O CURSOR N�O FIQUE PISCANDO NA TELA
         HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -76,9 +77,9 @@ int main()
     int y = 1;
     int vivo = true;
     int venceu = false;
-    int inimigos = 0;
+    int inimigos = 1;
 
-    int matriz[linhas][colunas]=
+    /*int matriz[linhas][colunas]=
     {
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
         1,0,0,2,2,0,0,0,0,0,0,0,0,0,1,
@@ -95,7 +96,35 @@ int main()
         1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,
         1,0,0,0,0,0,0,0,0,3,0,0,0,0,1,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    };
+    };*/
+    int matriz[linhas][colunas];
+    int ran = 0;
+
+    for(int i = 0; i < linhas; i++){
+        for(int j = 0; j < colunas; j++){
+            if(i == 0 || j == 0 || i == linhas-1 || j == colunas-1){ //BORDAS
+                matriz[i][j] = 1;
+            }else
+            {
+                if(i % 2 == 0 && j% 2 == 0){ //Tijolos do meio fixo
+                    matriz[i][j] = 1;
+                }else
+                {
+                    if((i == 1 && (j == 1 || j == 2)) || (j == 1 && i == 2) || (i == linhas-2 && (j == colunas-3 || j == colunas-2)) || (i == linhas-3 && j == colunas-2)){ //Parte início jogador
+                        matriz[i][j] = 0;
+                    }else{
+                        if(rand()% 2 == 1){
+                            matriz[i][j] = 2;
+                        }else{
+                             matriz[i][j] = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    matriz[linhas-2][colunas-2] = 3;
 
     for(int i=0;i<linhas;i++){
             for(int j=0;j<colunas;j++){
@@ -164,19 +193,19 @@ int main()
                     if(tempo_inimigo == false){
                         tempo_inimigo = true;
                         inicio_inimido = clock();
-                        if(i == x && j+1 == y){
-                            matriz[i][j] = 0;
-                            matriz[i][j+1] = 3;
-                            vivo = false;
-                        }else if(i-1 == x && j == y){
+                        if(i > x && matriz[i-1][j] == 0){
                             matriz[i][j] = 0;
                             matriz[i-1][j] = 3;
-                            vivo = false;
-                        }else if(i == x && j-1 == y){
+                        }else if(j > y && matriz[i][j-1] == 0){
                             matriz[i][j] = 0;
                             matriz[i][j-1] = 3;
-                            vivo = false;
-                        }else if(i+1 == x && j == y){
+                        }else if(i < x && matriz[i+1][j] == 0){
+                            matriz[i][j] = 0;
+                            matriz[i+1][j] = 3;
+                        }else if(j < y && matriz[i][j+1] == 0){
+                            matriz[i][j] = 0;
+                            matriz[i][j+1] = 3;
+                        }else if(i == x && j == y){
                             matriz[i][j] = 0;
                             matriz[i+1][j] = 3;
                             vivo = false;
@@ -304,7 +333,7 @@ int main()
 
     system("cls");
     if(venceu){
-        cout<<"Você venceu";
+        cout<<"Voce venceu";
     }else if(!vivo){
         cout<<"Game over";
     }
