@@ -65,11 +65,13 @@ int main()
     ///ALERTA: N�O MODIFICAR O TRECHO DE C�DIGO, ACIMA.
 
     clock_t inicio, fim;
+    clock_t inicio_inimido, fim_inimigo;
     srand(time(NULL));
 
     //Vari�vel para tecla precionada
     char tecla;
     bool tempo = false;
+    bool tempo_inimigo = false;
     int x = 1;
     int y = 1;
     int vivo = true;
@@ -90,7 +92,7 @@ int main()
         1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,
         1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
         1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,
-        1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,3,0,0,0,0,1,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     };
 
@@ -102,19 +104,73 @@ int main()
         for(int i=0;i<linhas;i++){
             for(int j=0;j<colunas;j++){
                 if(i==x && j==y){
-                    cout<< GREEN <<char(2)<<RESET; //personagem
+                    cout<<char(2); //personagem
                 } else {
                     switch (matriz[i][j]){
-                        case 0: cout<< GREEN <<char(219)<<RESET; break; //caminho
-                        case 1: cout<<char(219)<<RESET; break; //parede
-                        case 2: cout<< BLUE <<char(219)<<RESET; break; //parede frágil
-                        case 4: cout<< RED <<char(219)<<RESET; break; //bomba
-                        case 5: cout<< YELLOW <<char(219)<<RESET; break; //explode
+                        /*case 0: cout<< GREEN <<char(219)<<"\033[0m"; break; //caminho
+                        case 1: cout<<char(219)<<"\033[0m"; break; //parede
+                        case 2: cout<< BLUE <<char(219)<<"\033[0m"; break; //parede frágil
+                        case 4: cout<< RED <<char(2)<<"\033[0m"; break; //bomba
+                        case 5: cout<< YELLOW <<char(219)<<"\033[0m"; break; //explode */
+                        case 0: cout<<" "; break; //caminho
+                        case 1: cout<<char(21); break; //parede
+                        case 2: cout<<char(22); break; //parede frágil
+                        case 3: cout<<char(25); break; //parede frágil
+                        case 4: cout<<char(23); break; //bomba
+                        case 5: cout<<char(24); break; //explode
                         //default: cout<<"-"; //erro
                     } //fim switch
                 }
             }
             cout<<"\n";
+        }
+
+
+        for(int i=0;i<linhas;i++){
+            for(int j=0;j<colunas;j++){
+                if(matriz[i][j] == 3 && tempo_inimigo == false){
+                    tempo_inimigo = true;
+                    inicio_inimido = clock();
+                    if(i == x && j+1 == y){
+                        matriz[i][j] = 0;
+                        matriz[i][j+1] = 3;
+                        vivo = false;
+                    }else if(i-1 == x && j == y){
+                        matriz[i][j] = 0;
+                        matriz[i-1][j] = 3;
+                        vivo = false;
+                    }else if(i == x && j-1 == y){
+                        matriz[i][j] = 0;
+                        matriz[i][j-1] = 3;
+                        vivo = false;
+                    }else if(i+1 == x && j == y){
+                        matriz[i][j] = 0;
+                        matriz[i+1][j] = 3;
+                        vivo = false;
+                    }else if(matriz[i][j+1] == 0){
+                        matriz[i][j] = 0;
+                        matriz[i][j+1] = 3;
+                    }else if(matriz[i-1][j] == 0){
+                        matriz[i][j] = 0;
+                        matriz[i-1][j] = 3;
+                    }else if(matriz[i][j-1] == 0){
+                        matriz[i][j] = 0;
+                        matriz[i][j-1] = 3;
+                    }else if(matriz[i+1][j] == 0){
+                        matriz[i][j] = 0;
+                        matriz[i+1][j] = 3;
+                    }
+                }
+            }
+        }
+
+
+        if (tempo_inimigo==true) {
+            fim_inimigo = clock();
+            if ((fim_inimigo-inicio_inimido)/CLOCKS_PER_SEC == 1) {
+                //Aperece o amarelo no raio de destruição
+                tempo_inimigo = false;
+            }
         }
 
         ///executa os movimentos
@@ -207,6 +263,7 @@ int main()
 
 
     } //fim do laço do jogo
+
     system("cls");
     cout<<"Game over";
 
