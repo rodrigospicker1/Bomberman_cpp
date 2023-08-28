@@ -19,7 +19,8 @@ int colunas = 15;
 
 using namespace std;
 
-/*int constroiMatriz(int &matriz){
+/*
+int constroiMatriz(int **matriz[linhas][colunas]){
 
     for(int i = 0; i < linhas; i++){
         for(int j = 0; j < colunas; j++){
@@ -34,16 +35,15 @@ using namespace std;
                     if((i == 1 && (j == 1 || j ==2)) || (j == 1 && i == 2) || (i == linhas-2 && (j == colunas-3 || j == colunas-2)) || (i == linhas-3 && j == colunas-2)){ //Parte início jogador
                         matriz[i][j] = 0;
                     }else{
-                        &matriz[i][j] = (rand()% 2) + 2;
+                        matriz[i][j] = (rand()% 2);
                     }
                 }
             }
         }
     }
 
-    return matriz;
-
-} */
+}
+*/
 
 
 int main()
@@ -75,7 +75,8 @@ int main()
     int x = 1;
     int y = 1;
     int vivo = true;
-
+    int venceu = false;
+    int inimigos = 0;
 
     int matriz[linhas][colunas]=
     {
@@ -96,7 +97,34 @@ int main()
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     };
 
-    while(vivo){
+    for(int i=0;i<linhas;i++){
+            for(int j=0;j<colunas;j++){
+                if(i==x && j==y){
+                    cout<<char(2); //personagem
+                } else {
+                    switch (matriz[i][j]){
+                        /*
+                        case 0: cout<< GREEN <<char(219)<<"\033[0m"; break; //caminho
+                        case 1: cout<<char(219)<<"\033[0m"; break; //parede
+                        case 2: cout<< BLUE <<char(219)<<"\033[0m"; break; //parede frágil
+                        case 3: cout<< RED <<char(2)<<"\033[0m"; break; //inimigo
+                        case 4: cout<< RED <<char(2)<<"\033[0m"; break; //bomba
+                        case 5: cout<< YELLOW <<char(219)<<"\033[0m"; break; //explode
+                        */
+                        case 0: cout<<" "; break; //caminho
+                        case 1: cout<<char(21); break; //parede
+                        case 2: cout<<char(22); break; //parede frágil
+                        case 3: cout<<char(25); break; //inimigo
+                        case 4: cout<<char(23); break; //bomba
+                        case 5: cout<<char(24); break; //explode
+                        //default: cout<<"-"; //erro
+                    } //fim switch
+                }
+            }
+            cout<<"\n";
+        }
+
+    while(vivo && !venceu){
         ///Posiciona a escrita no início do console
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 
@@ -107,15 +135,18 @@ int main()
                     cout<<char(2); //personagem
                 } else {
                     switch (matriz[i][j]){
-                        /*case 0: cout<< GREEN <<char(219)<<"\033[0m"; break; //caminho
+                        /*
+                        case 0: cout<< GREEN <<char(219)<<"\033[0m"; break; //caminho
                         case 1: cout<<char(219)<<"\033[0m"; break; //parede
                         case 2: cout<< BLUE <<char(219)<<"\033[0m"; break; //parede frágil
+                        case 3: cout<< RED <<char(2)<<"\033[0m"; break; //inimigo
                         case 4: cout<< RED <<char(2)<<"\033[0m"; break; //bomba
-                        case 5: cout<< YELLOW <<char(219)<<"\033[0m"; break; //explode */
+                        case 5: cout<< YELLOW <<char(219)<<"\033[0m"; break; //explode
+                        */
                         case 0: cout<<" "; break; //caminho
                         case 1: cout<<char(21); break; //parede
                         case 2: cout<<char(22); break; //parede frágil
-                        case 3: cout<<char(25); break; //parede frágil
+                        case 3: cout<<char(25); break; //inimigo
                         case 4: cout<<char(23); break; //bomba
                         case 5: cout<<char(24); break; //explode
                         //default: cout<<"-"; //erro
@@ -125,43 +156,50 @@ int main()
             cout<<"\n";
         }
 
-
+        inimigos = 0;
         for(int i=0;i<linhas;i++){
             for(int j=0;j<colunas;j++){
-                if(matriz[i][j] == 3 && tempo_inimigo == false){
-                    tempo_inimigo = true;
-                    inicio_inimido = clock();
-                    if(i == x && j+1 == y){
-                        matriz[i][j] = 0;
-                        matriz[i][j+1] = 3;
-                        vivo = false;
-                    }else if(i-1 == x && j == y){
-                        matriz[i][j] = 0;
-                        matriz[i-1][j] = 3;
-                        vivo = false;
-                    }else if(i == x && j-1 == y){
-                        matriz[i][j] = 0;
-                        matriz[i][j-1] = 3;
-                        vivo = false;
-                    }else if(i+1 == x && j == y){
-                        matriz[i][j] = 0;
-                        matriz[i+1][j] = 3;
-                        vivo = false;
-                    }else if(matriz[i][j+1] == 0){
-                        matriz[i][j] = 0;
-                        matriz[i][j+1] = 3;
-                    }else if(matriz[i-1][j] == 0){
-                        matriz[i][j] = 0;
-                        matriz[i-1][j] = 3;
-                    }else if(matriz[i][j-1] == 0){
-                        matriz[i][j] = 0;
-                        matriz[i][j-1] = 3;
-                    }else if(matriz[i+1][j] == 0){
-                        matriz[i][j] = 0;
-                        matriz[i+1][j] = 3;
+                if(matriz[i][j] == 3){
+                    inimigos++;
+                    if(tempo_inimigo == false){
+                        tempo_inimigo = true;
+                        inicio_inimido = clock();
+                        if(i == x && j+1 == y){
+                            matriz[i][j] = 0;
+                            matriz[i][j+1] = 3;
+                            vivo = false;
+                        }else if(i-1 == x && j == y){
+                            matriz[i][j] = 0;
+                            matriz[i-1][j] = 3;
+                            vivo = false;
+                        }else if(i == x && j-1 == y){
+                            matriz[i][j] = 0;
+                            matriz[i][j-1] = 3;
+                            vivo = false;
+                        }else if(i+1 == x && j == y){
+                            matriz[i][j] = 0;
+                            matriz[i+1][j] = 3;
+                            vivo = false;
+                        }else if(matriz[i][j+1] == 0){
+                            matriz[i][j] = 0;
+                            matriz[i][j+1] = 3;
+                        }else if(matriz[i-1][j] == 0){
+                            matriz[i][j] = 0;
+                            matriz[i-1][j] = 3;
+                        }else if(matriz[i][j-1] == 0){
+                            matriz[i][j] = 0;
+                            matriz[i][j-1] = 3;
+                        }else if(matriz[i+1][j] == 0){
+                            matriz[i][j] = 0;
+                            matriz[i+1][j] = 3;
+                        }
                     }
                 }
             }
+        }
+
+        if(inimigos == 0){
+            venceu = true;
         }
 
 
@@ -265,7 +303,11 @@ int main()
     } //fim do laço do jogo
 
     system("cls");
-    cout<<"Game over";
+    if(venceu){
+        cout<<"Você venceu";
+    }else if(!vivo){
+        cout<<"Game over";
+    }
 
     return 0;
 } //fim main
