@@ -19,36 +19,58 @@ int colunas = 15;
 
 using namespace std;
 
-/*
-int constroiMatriz(int **matriz[linhas][colunas]){
-
+int constroiMatriz(int matriz[15][15], int linhas, int colunas){
     for(int i = 0; i < linhas; i++){
         for(int j = 0; j < colunas; j++){
             if(i == 0 || j == 0 || i == linhas-1 || j == colunas-1){ //BORDAS
                 matriz[i][j] = 1;
             }else
             {
-                if(i % 2 == 0 || j% 2 == 0){ //Tijolos do meio fixo
+                if(i % 2 == 0 && j% 2 == 0){ //Tijolos do meio fixo
                     matriz[i][j] = 1;
                 }else
                 {
-                    if((i == 1 && (j == 1 || j ==2)) || (j == 1 && i == 2) || (i == linhas-2 && (j == colunas-3 || j == colunas-2)) || (i == linhas-3 && j == colunas-2)){ //Parte início jogador
+                    if((i == 1 && (j == 1 || j == 2)) || (j == 1 && i == 2) || (i == linhas-2 && (j == colunas-3 || j == colunas-2)) || (i == linhas-3 && j == colunas-2)){ //Parte início jogador
                         matriz[i][j] = 0;
                     }else{
-                        matriz[i][j] = (rand()% 2);
+                        if(rand()% 2 == 1){
+                            matriz[i][j] = 2;
+                        }else{
+                             matriz[i][j] = 0;
+                        }
                     }
                 }
             }
         }
     }
 
+    return matriz[15][15];
 }
-*/
 
+int mostraMatriz(int matriz[15][15],int linhas, int colunas, int x, int y){
+    ///Imprime o jogo: mapa e personagem.
+        for(int i=0;i<linhas;i++){
+            for(int j=0;j<colunas;j++){
+                if(i==x && j==y){
+                    cout<<char(2); //personagem
+                } else {
+                    switch (matriz[i][j]){
+                        case 0: cout<<" "; break; //caminho
+                        case 1: cout<<char(219); break; //parede
+                        case 2: cout<<char(178); break; //parede frágil
+                        case 3: cout<<char(1); break; //inimigo
+                        case 4: cout<<char(15); break; //bomba
+                        case 5: cout<<char(15); break; //explode
+
+                    } //fim switch
+                }
+            }
+            cout<<"\n";
+        }
+}
 
 int main()
 {
-    setlocale(LC_ALL, "portuguese");
     ///ALERTA: N�O MODIFICAR O TRECHO DE C�DIGO, A SEGUIR.
         //INICIO: COMANDOS PARA QUE O CURSOR N�O FIQUE PISCANDO NA TELA
         HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -79,92 +101,17 @@ int main()
     int venceu = false;
     int inimigos = 0;
 
-    int matriz[linhas][colunas];
-
-    for(int i = 0; i < linhas; i++){
-        for(int j = 0; j < colunas; j++){
-            if(i == 0 || j == 0 || i == linhas-1 || j == colunas-1){ //BORDAS
-                matriz[i][j] = 1;
-            }else
-            {
-                if(i % 2 == 0 && j% 2 == 0){ //Tijolos do meio fixo
-                    matriz[i][j] = 1;
-                }else
-                {
-                    if((i == 1 && (j == 1 || j == 2)) || (j == 1 && i == 2) || (i == linhas-2 && (j == colunas-3 || j == colunas-2)) || (i == linhas-3 && j == colunas-2)){ //Parte início jogador
-                        matriz[i][j] = 0;
-                    }else{
-                        if(rand()% 2 == 1){
-                            matriz[i][j] = 2;
-                        }else{
-                             matriz[i][j] = 0;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    int matriz[15][15];
+    constroiMatriz(matriz, linhas, colunas);
 
     matriz[linhas-2][colunas-2] = 3;
-
-    for(int i=0;i<linhas;i++){
-            for(int j=0;j<colunas;j++){
-                if(i==x && j==y){
-                    cout<<char(2); //personagem
-                } else {
-                    switch (matriz[i][j]){
-                        /*
-                        case 0: cout<< GREEN <<char(219)<<"\033[0m"; break; //caminho
-                        case 1: cout<<char(219)<<"\033[0m"; break; //parede
-                        case 2: cout<< BLUE <<char(219)<<"\033[0m"; break; //parede frágil
-                        case 3: cout<< RED <<char(2)<<"\033[0m"; break; //inimigo
-                        case 4: cout<< RED <<char(2)<<"\033[0m"; break; //bomba
-                        case 5: cout<< YELLOW <<char(219)<<"\033[0m"; break; //explode
-                        */
-                        case 0: cout<<" "; break; //caminho
-                        case 1: cout<<char(21); break; //parede
-                        case 2: cout<<char(22); break; //parede frágil
-                        case 3: cout<<char(25); break; //inimigo
-                        case 4: cout<<char(23); break; //bomba
-                        case 5: cout<<char(24); break; //explode
-                        //default: cout<<"-"; //erro
-                    } //fim switch
-                }
-            }
-            cout<<"\n";
-        }
 
     while(vivo && !venceu){
         ///Posiciona a escrita no início do console
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 
         ///Imprime o jogo: mapa e personagem.
-        for(int i=0;i<linhas;i++){
-            for(int j=0;j<colunas;j++){
-                if(i==x && j==y){
-                    cout<<char(2); //personagem
-                } else {
-                    switch (matriz[i][j]){
-                        /*
-                        case 0: cout<< GREEN <<char(219)<<"\033[0m"; break; //caminho
-                        case 1: cout<<char(219)<<"\033[0m"; break; //parede
-                        case 2: cout<< BLUE <<char(219)<<"\033[0m"; break; //parede frágil
-                        case 3: cout<< RED <<char(2)<<"\033[0m"; break; //inimigo
-                        case 4: cout<< RED <<char(2)<<"\033[0m"; break; //bomba
-                        case 5: cout<< YELLOW <<char(219)<<"\033[0m"; break; //explode
-                        */
-                        case 0: cout<<" "; break; //caminho
-                        case 1: cout<<char(21); break; //parede
-                        case 2: cout<<char(22); break; //parede frágil
-                        case 3: cout<<char(25); break; //inimigo
-                        case 4: cout<<char(23); break; //bomba
-                        case 5: cout<<char(24); break; //explode
-                        //default: cout<<"-"; //erro
-                    } //fim switch
-                }
-            }
-            cout<<"\n";
-        }
+        mostraMatriz(matriz,15,15,x,y);
 
         inimigos = 0;
         for(int i=0;i<linhas;i++){
@@ -266,27 +213,15 @@ int main()
                         if(matriz[i][j] == 4){
                             if(matriz[i-1][j] != 1){
                                 matriz[i-1][j] =  5;
-                                if(matriz[i-2][j] != 1){
-                                    matriz[i-2][j] =  5;
-                                }
                             }
                             if(matriz[i+1][j] != 1){
                                 matriz[i+1][j] =  5;
-                                if(matriz[i+2][j] != 1){
-                                    matriz[i+2][j] =  5;
-                                }
                             }
                             if(matriz[i][j-1] != 1){
                                 matriz[i][j-1] =  5;
-                                if(matriz[i][j-1] != 1){
-                                    matriz[i][j-1] =  5;
-                                }
                             }
                             if(matriz[i][j+1] != 1){
                                 matriz[i][j+1] =  5;
-                                if(matriz[i][j+2] != 1){
-                                    matriz[i][j+2] =  5;
-                                }
                             }
                         }
                     }
