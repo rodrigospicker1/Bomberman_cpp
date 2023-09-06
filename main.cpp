@@ -3,8 +3,8 @@
     versão: 0.1 (Felski)
 */
 #include <iostream>
-#include<windows.h>
-#include<conio.h>
+#include <windows.h>
+#include <conio.h>
 #include <time.h>
 #include <ctime>
 #include <stdlib.h>
@@ -69,6 +69,45 @@ int mostraMatriz(int matriz[15][15],int linhas, int colunas, int x, int y){
         }
 }
 
+int inimigoPro(int inimigos, int linhas, int colunas, int matriz[15][15], int tempo_inimigo, clock_t inicio_inimido, int x, int y, bool vivo) {
+
+  // Add a comment to the beginning of the function that explains what it does.
+  /* This function moves the enemy. */
+
+  for (int i = 0; i < linhas; i++) {
+    for (int j = 0; j < colunas; j++) {
+      if (matriz[i][j] == 3) {
+        inimigos++;
+        if (tempo_inimigo == false) {
+          tempo_inimigo = true;
+          inicio_inimido = clock();
+          if (i > x && matriz[i - 1][j] == 0) {
+            matriz[i][j] = 0;
+            matriz[i - 1][j] = 3;
+          } else if (j > y && matriz[i][j - 1] == 0) {
+            matriz[i][j] = 0;
+            matriz[i][j - 1] = 3;
+          } else if (i < x && matriz[i + 1][j] == 0) {
+            matriz[i][j] = 0;
+            matriz[i + 1][j] = 3;
+          } else if (j < y && matriz[i][j + 1] == 0) {
+            matriz[i][j] = 0;
+            matriz[i][j + 1] = 3;
+          } else if (i == x && j == y - 1) {
+            matriz[i][j] = 0;
+            matriz[i + 1][j] = 3;
+            vivo = false;
+          }
+        }
+      }
+    }
+  }
+
+  // Change the return values of the function to a tuple.
+  return make_tuple(inimigos, linhas, colunas, matriz, tempo_inimigo, inicio_inimido, x, y, vivo);
+}
+
+
 int main()
 {
     ///ALERTA: N�O MODIFICAR O TRECHO DE C�DIGO, A SEGUIR.
@@ -114,7 +153,9 @@ int main()
         mostraMatriz(matriz,15,15,x,y);
 
         inimigos = 0;
-        for(int i=0;i<linhas;i++){
+        inimigoPro(inimigos, 15, 15, matriz, tempo_inimigo, inicio_inimido, x, y, vivo);
+
+        /*for(int i=0;i<linhas;i++){
             for(int j=0;j<colunas;j++){
                 if(matriz[i][j] == 3){
                     inimigos++;
@@ -153,7 +194,7 @@ int main()
                     }
                 }
             }
-        }
+        }*/
 
         if(inimigos == 0){
             venceu = true;
