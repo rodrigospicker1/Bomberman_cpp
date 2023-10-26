@@ -15,6 +15,18 @@ int colunas = 0;
 int x = 0;
 int y = 0;
 
+void escolhaMenu();
+
+void mostraMenu()
+{
+    cout << "DEVELOPED BY RODRIGO & VICTOR\n\n";
+    cout << "Bem-vindo ao Bomerman!" << endl;
+    cout << "1. Novo jogo" << endl;
+    cout << "2. Carregar o jogo salvo" << endl;
+    cout << "3. Sobre os desenvolvedores" << endl;
+    cout << "4. Exit" << "\n\n";
+}
+
 int ger_num_aleatorio(int valor_max)
 {
     unsigned seed = time(0);
@@ -77,6 +89,7 @@ int mostraMatriz(int **matriz)
                     case 7: cout << char(15); break; // Bomba (explodindo)
                     case 8: cout << char(15); break; // Explosão (fade out)
                     case 9: cout << char(2); break; // Personagem
+                    case 10: cout << char(2); break; // Personagem
                     */
                     case 0: cout << " "; break; // Caminho
                     case 1: cout << "#"; break; // Parede
@@ -88,6 +101,7 @@ int mostraMatriz(int **matriz)
                     case 7: cout << "@"; break; // Bomba (explodindo)
                     case 8: cout << "@"; break; // Explosão (fade out)
                     case 9: cout << "%"; break; // Coletável aumenta raio de bomba
+                    case 10: cout << "~"; break; // Coletável atravesar parede
                 }
             }
         }
@@ -95,7 +109,7 @@ int mostraMatriz(int **matriz)
     }
 }
 
-void salva_jogo(int **matriz, int segundos_jogador)
+void salva_jogo(int **matriz, int segundos_jogados, int max_paredes_passadas, int total_bombas)
 {
     fstream dados_jogo;
     dados_jogo.open("dados_jogo.txt");
@@ -104,7 +118,9 @@ void salva_jogo(int **matriz, int segundos_jogador)
     {
         dados_jogo << linhas << "\n";
         dados_jogo << colunas << "\n";
-        dados_jogo << segundos_jogador << "\n";
+        dados_jogo << x << "\n";
+        dados_jogo << y << "\n";
+        dados_jogo << segundos_jogados << "\n";
 
         //Salva array do jogo
         for(int i = 0; i < linhas; i++){
@@ -113,6 +129,11 @@ void salva_jogo(int **matriz, int segundos_jogador)
             }
             dados_jogo << "\n";
         }
+
+
+        dados_jogo << max_paredes_passadas << "\n";
+        dados_jogo << total_bombas << "\n";
+
         dados_jogo.close();
 
     }else
@@ -121,22 +142,121 @@ void salva_jogo(int **matriz, int segundos_jogador)
     }
 }
 
-int retorna_posicao(int **matriz, int next_move_x, int next_move_y, int *coletavel_bomba)
+void retorna_posicao(int **matriz, int next_move_x, int next_move_y, int *coletavel_bomba, int *coletavel_parede, int *max_paredes_passadas)
 {
-    if(matriz[next_move_x][next_move_y] != 1 && matriz[next_move_x][next_move_y] != 2){
+    if( (matriz[next_move_x][next_move_y] != 1 && matriz[next_move_x][next_move_y] != 2) || (*coletavel_parede == 1 && *max_paredes_passadas > 0) ){
         x = next_move_x;
         y = next_move_y;
+        if(matriz[next_move_x][next_move_y] == 1 || matriz[next_move_x][next_move_y] == 2)
+        {
+            *max_paredes_passadas = *max_paredes_passadas-1;
+        }
         if(matriz[next_move_x][next_move_y] == 9)
         {
             *coletavel_bomba = 1;
+            matriz[next_move_x][next_move_y] = 0;
+        }else if(matriz[next_move_x][next_move_y] == 10)
+        {
+            *coletavel_parede = 1;
+            matriz[next_move_x][next_move_y] = 0;
         }
     }
 }
 
-void play(int **matriz)
+void verifica_bomba(int **matriz, int raio_bomba)
+{
+    int cima = 1;
+    int baixo = 1;
+    int esq = 1;
+    int dir = 1;
+    int x_bomba = 0;
+    int y_bomba = 0;
+
+    for (int i = 0; i < linhas; i++)
+    {
+        for (int j = 0; j < colunas; j++)
+        {
+            if (matriz[i][j] == 4)
+            {
+                x_bomba = i;
+                y_bomba = j;
+
+            }
+        }
+    }
+
+    for(int i = 1; i <= raio_bomba; i++)
+    {
+        if(cima == 1){
+            if(matriz[x_bomba-i][y_bomba] != 1){
+                if(matriz[x_bomba-i][y_bomba] == 2)
+                {
+                    cima = 0;
+                }
+                matriz[x_bomba-i][y_bomba] = 5;
+            }else
+            {
+                cima = 0;
+            }
+        }
+        if(baixo == 1){
+            if(matriz[x_bomba+i][y_bomba] != 1){
+                if(matriz[x_bomba+i][y_bomba] == 2)
+                {
+                    baixo = 0;
+                }
+                matriz[x_bomba+i][y_bomba] = 5;
+            }else{
+                baixo = 0;
+            }
+        }
+        if(esq == 1){
+            if(matriz[x_bomba][y_bomba-i] != 1){
+                if(matriz[x_bomba][y_bomba-i] == 2)
+                {
+                    esq = 0;
+                }
+                matriz[x_bomba][y_bomba-i] = 5;
+            }else{
+                esq = 0;
+            }
+        }
+        if(dir == 1){
+            if(matriz[x_bomba][y_bomba+i] != 1){
+                if(matriz[x_bomba][y_bomba+i] == 2)
+                {
+                    dir = 0;
+                }
+                matriz[x_bomba][y_bomba+i] = 5;
+            }else{
+                dir = 0;
+            }
+        }
+    }
+}
+
+void game_over(){
+    system("CLS");
+    char opc;
+    while(opc != 's' || opc != 'n')
+    {
+        cout << "Você perdeu!\n\n";
+        cout << "Você deseja continuar [s/n]\n";
+        cout << "?: ";
+        cin >> opc;
+    }
+    if(opc == 's'){
+        system("CLS");
+        mostraMenu();
+        escolhaMenu();
+    }else{
+        exit(1);
+    }
+}
+
+void play(int **matriz, int max_paredes, int total_bomb)
 {
     system("CLS");
-    salva_jogo(matriz, 0);
     // Configurações de console para ocultar o cursor e reposicionar o cursor
     HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO cursorInfo;
@@ -150,8 +270,10 @@ void play(int **matriz)
     coord.Y = CY;
 
     // Variáveis para medir o tempo e controlar o jogo
+    clock_t tempo_jogado, total_tempo_jogado;
     clock_t inicio, fim;
     clock_t inicio_inimigo, fim_inimigo;
+    clock_t inicio_coletavel_bomba, fim_coletavel_bomba;
     srand(time(NULL));
 
     //mostraMatriz(matriz);
@@ -163,6 +285,11 @@ void play(int **matriz)
     int venceu = false;
     int inimigos = 0;
     int coletavel_bomba = 0;
+    int coletavel_parede = 0;
+    bool tempo_coletavel_bomba = false;
+    int raio_bomba = 1;
+    int max_paredes_passadas = 5;
+    int total_bombas = 0;
 
     int posicao1_x = 0;
     int posicao1_y = 0;
@@ -176,10 +303,31 @@ void play(int **matriz)
         matriz[1][2] = 9;
     }
 
+    do{
+        posicao1_x = ger_num_aleatorio(linhas-1);
+        posicao1_y = ger_num_aleatorio(colunas-1);
+    }while(matriz[posicao1_x][posicao1_y] != 0 && (posicao1_x != x || posicao1_y != y) );
+
+    if(matriz[posicao1_x][posicao1_y] == 0){
+        matriz[2][1] = 10;
+    }
+
+    tempo_jogado = clock();
+    if(max_paredes > 0){
+        coletavel_parede = 1;
+        max_paredes_passadas = max_paredes;
+    }
+    if(total_bomb > 0){
+        coletavel_bomba = 1;
+        total_bombas = total_bomb;
+    }
 
     while (vivo && !venceu) {
         // Posiciona o cursor no início do console e mostra a matriz
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+        total_tempo_jogado = clock();
+        int tempo_corrido = (total_tempo_jogado-tempo_jogado) / CLOCKS_PER_SEC;
+        cout << "Tempo jogado: " << tempo_corrido << "\n\n";
         mostraMatriz(matriz);
 
         // Movimento dos inimigos
@@ -299,38 +447,42 @@ void play(int **matriz)
                     /*if (matriz[x - 1][y] == 0) {
                         x--;
                     }*/
-                    retorna_posicao(matriz, x-1, y, &coletavel_bomba);
+                    retorna_posicao(matriz, x-1, y, &coletavel_bomba, &coletavel_parede, &max_paredes_passadas);
                     break;
                 case 80: case 's': ///baixo
                     /*if (matriz[x + 1][y] == 0) {
                         x++;
                     }*/
-                    retorna_posicao(matriz, x+1, y, &coletavel_bomba);
+                    retorna_posicao(matriz, x+1, y, &coletavel_bomba, &coletavel_parede, &max_paredes_passadas);
                     break;
                 case 75:case 'a': ///esquerda
                     /*if (matriz[x][y - 1] == 0) {
                         y--;
                     }*/
 
-                    retorna_posicao(matriz, x, y-1, &coletavel_bomba);
+                    retorna_posicao(matriz, x, y-1, &coletavel_bomba,  &coletavel_parede, &max_paredes_passadas);
                     break;
                 case 77: case 'd': ///direita
                     /*if (matriz[x][y + 1] == 0) {
                         y++;
                     }*/
-                    retorna_posicao(matriz, x, y+1, &coletavel_bomba);
+                    retorna_posicao(matriz, x, y+1, &coletavel_bomba,  &coletavel_parede, &max_paredes_passadas);
                     break;
                 case 32: case 'space': ///bomba
                     if (tempo == false){
                         matriz[x][y] = 4;
                         inicio = clock();
                         tempo = true;
+                        if(coletavel_bomba == 1)
+                        {
+                            total_bombas++;
+                        }
                     }
                     break;
                 case 'p':
                     if(tempo == false)
                     {
-                        salva_jogo(matriz, 0);
+                        salva_jogo(matriz, tempo_corrido, max_paredes_passadas, total_bombas);
                     }else
                     {
                         cout<<"Não é possível salvar com bomba no mapa";
@@ -342,11 +494,77 @@ void play(int **matriz)
             }
         }
 
+
+        if(coletavel_bomba == 1)
+        {
+            cout << "Bombas com raio 3 restante: " << 3 - total_bombas << "\n";
+            raio_bomba = 3;
+            if (total_bombas == 3)
+            {
+                raio_bomba = 1;
+                coletavel_bomba = 0;
+                system("CLS");
+            }
+        }
+
+        if(coletavel_parede == 1)
+        {
+            cout << "Paredes restante: " << max_paredes_passadas << "\n";
+            if (max_paredes_passadas == 0)
+            {
+                system("CLS");
+                coletavel_parede = 0;
+                if(matriz[x][y] != 0){
+                    int feito = 0;
+                    for(int i = x; i >= 0; i--){
+                        if(matriz[i][y] == 0 && feito == 0){
+                            feito = 1;
+                            x = i;
+                        }
+                    }
+                    if(feito == 0)
+                    {
+                        for(int i = y; i < colunas; i++){
+                            if(matriz[i][y] == 0 && feito == 0){
+                                feito = 1;
+                                y = i;
+                            }
+                        }
+                    }
+                    if(feito == 0)
+                    {
+                        for(int i = y; i >= 0; i--){
+                            if(matriz[x][i] == 0 && feito == 0){
+                                feito = 1;
+                                y = i;
+                            }
+                        }
+                    }
+                    if(feito == 0)
+                    {
+                        for(int i = x; i < linhas; i++){
+                            if(matriz[i][y] == 0 && feito == 0){
+                                feito = 1;
+                                x = i;
+                            }
+                        }
+                    }
+                    if(feito == 0){
+                        x = 1;
+                        y = 1;
+                    }
+                }
+            }
+        }
+
+
         //verifica se o tempo de uma bomba está ativo
         if (tempo == true) {
             fim = clock();
             if ((fim - inicio) / CLOCKS_PER_SEC == 3) {
                 // Aperece o amarelo no raio de destruição
+                verifica_bomba(matriz, raio_bomba);
+                /*
                 for (int i = 0; i < linhas; i++) {
                     for (int j = 0; j < colunas; j++) {
                         if (matriz[i][j] == 4) {
@@ -365,6 +583,7 @@ void play(int **matriz)
                         }
                     }
                 }
+                */
 
             }
             if ((fim - inicio) / CLOCKS_PER_SEC == 4) {
@@ -391,18 +610,8 @@ void play(int **matriz)
         cout << "Voce venceu";
     }
     else if (!vivo) {
-        cout << "Game over";
+        game_over();
     }
-}
-
-void mostraMenu()
-{
-    cout << "DEVELOPED BY RODRIGO & VICTOR\n\n";
-    cout << "Bem-vindo ao Bomerman!" << endl;
-    cout << "1. Novo jogo" << endl;
-    cout << "2. Carregar o jogo salvo" << endl;
-    cout << "3. Sobre os desenvolvedores" << endl;
-    cout << "4. Exit" << "\n\n";
 }
 
 void novo_jogo()
@@ -443,12 +652,12 @@ void novo_jogo()
     cout << "\n";
 
 
-    play(matriz);
+    play(matriz, 0 , 0);
 }
 
 void carrega_jogo()
 {
-    int x, y, segundos_jogados;
+    int segundos_jogados, max_paredes_passadas, total_bombas;
     fstream dados_jogo;
     dados_jogo.open("dados_jogo.txt");
 
@@ -457,6 +666,8 @@ void carrega_jogo()
         // if(!is_empty(dados_jogo)){
             dados_jogo >> linhas;
             dados_jogo >> colunas;
+            dados_jogo >> x;
+            dados_jogo >> y;
             dados_jogo >> segundos_jogados;
 
             int** matriz = new int*[linhas];
@@ -475,8 +686,11 @@ void carrega_jogo()
                 }
             }
 
+            dados_jogo >> max_paredes_passadas;
+            dados_jogo >> total_bombas;
+
             dados_jogo.close();
-            play(matriz);
+            play(matriz, max_paredes_passadas, total_bombas);
         // }
     }else
     {
@@ -485,7 +699,7 @@ void carrega_jogo()
     }
 }
 
-int escolhaMenu()
+void escolhaMenu()
 {
     int escolha_menu;
     int valido = 0;
