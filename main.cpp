@@ -254,7 +254,7 @@ void game_over(){
     }
 }
 
-void play(int **matriz, int max_paredes, int total_bomb)
+void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
 {
     system("CLS");
     // Configurações de console para ocultar o cursor e reposicionar o cursor
