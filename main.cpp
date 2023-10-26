@@ -4,13 +4,23 @@
 #include <time.h>
 #include <ctime>
 #include <stdlib.h>
-#include <tuple>
 #include <fstream>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
 int linhas = 0;
 int colunas = 0;
+int x = 0;
+int y = 0;
+
+int ger_num_aleatorio(int valor_max)
+{
+    unsigned seed = time(0);
+    srand(seed);
+    return rand()%valor_max;
+}
 
 // Função para construir a matriz inicial do jogo
 void constroiMatriz(int **matriz) {
@@ -43,32 +53,42 @@ void constroiMatriz(int **matriz) {
     }
 }
 // Função para mostrar a matriz do jogo na tela
-int mostraMatriz(int **matriz) {
-    for (int i = 0; i < linhas; i++) {
-        for (int j = 0; j < colunas; j++) {
-            switch (matriz[i][j]) {
-                /*
-                case 0: cout << " "; break; // Caminho
-                case 1: cout << char(219); break; // Parede
-                case 2: cout << char(178); break; // Parede frágil
-                case 3: cout << char(1); break; // Inimigo
-                case 4: cout << char(15); break; // Bomba
-                case 5: cout << char(15); break; // Explosão
-                case 6: cout << char(1); break; // Inimigo (explodindo)
-                case 7: cout << char(15); break; // Bomba (explodindo)
-                case 8: cout << char(15); break; // Explosão (fade out)
-                case 9: cout << char(2); break; // Personagem
-                */
-                case 0: cout << " "; break; // Caminho
-                case 1: cout << "#"; break; // Parede
-                case 2: cout << "="; break; // Parede frágil
-                case 3: cout << "+"; break; // Inimigo
-                case 4: cout << "@"; break; // Bomba
-                case 5: cout << "@"; break; // Explosão
-                case 6: cout << "@"; break; // Inimigo (explodindo)
-                case 7: cout << "@"; break; // Bomba (explodindo)
-                case 8: cout << "@"; break; // Explosão (fade out)
-                case 9: cout << "*"; break; // Personagem
+int mostraMatriz(int **matriz)
+{
+    for (int i = 0; i < linhas; i++)
+    {
+        for (int j = 0; j < colunas; j++)
+        {
+            if(i==x && j==y){
+                //cout<<char(2); //personagem
+                cout<<"*"; //personagem
+            } else
+            {
+                switch (matriz[i][j])
+                {
+                    /*
+                    case 0: cout << " "; break; // Caminho
+                    case 1: cout << char(219); break; // Parede
+                    case 2: cout << char(178); break; // Parede frágil
+                    case 3: cout << char(1); break; // Inimigo
+                    case 4: cout << char(15); break; // Bomba
+                    case 5: cout << char(15); break; // Explosão
+                    case 6: cout << char(1); break; // Inimigo (explodindo)
+                    case 7: cout << char(15); break; // Bomba (explodindo)
+                    case 8: cout << char(15); break; // Explosão (fade out)
+                    case 9: cout << char(2); break; // Personagem
+                    */
+                    case 0: cout << " "; break; // Caminho
+                    case 1: cout << "#"; break; // Parede
+                    case 2: cout << "="; break; // Parede frágil
+                    case 3: cout << "+"; break; // Inimigo
+                    case 4: cout << "@"; break; // Bomba
+                    case 5: cout << "@"; break; // Explosão
+                    case 6: cout << "@"; break; // Inimigo (explodindo)
+                    case 7: cout << "@"; break; // Bomba (explodindo)
+                    case 8: cout << "@"; break; // Explosão (fade out)
+                    case 9: cout << "%"; break; // Coletável aumenta raio de bomba
+                }
             }
         }
         cout << "\n";
@@ -101,7 +121,19 @@ void salva_jogo(int **matriz, int segundos_jogador)
     }
 }
 
-void play(int **matriz, int x, int y)
+int retorna_posicao(int **matriz, int next_move_x, int next_move_y, int *coletavel_bomba)
+{
+    if(matriz[next_move_x][next_move_y] != 1 && matriz[next_move_x][next_move_y] != 2){
+        x = next_move_x;
+        y = next_move_y;
+        if(matriz[next_move_x][next_move_y] == 9)
+        {
+            *coletavel_bomba = 1;
+        }
+    }
+}
+
+void play(int **matriz)
 {
     system("CLS");
     salva_jogo(matriz, 0);
@@ -130,6 +162,20 @@ void play(int **matriz, int x, int y)
     int vivo = true;
     int venceu = false;
     int inimigos = 0;
+    int coletavel_bomba = 0;
+
+    int posicao1_x = 0;
+    int posicao1_y = 0;
+
+    do{
+        posicao1_x = ger_num_aleatorio(linhas-1);
+        posicao1_y = ger_num_aleatorio(colunas-1);
+    }while(matriz[posicao1_x][posicao1_y] != 0 && (posicao1_x != x || posicao1_y != y) );
+
+    if(matriz[posicao1_x][posicao1_y] == 0){
+        matriz[1][2] = 9;
+    }
+
 
     while (vivo && !venceu) {
         // Posiciona o cursor no início do console e mostra a matriz
@@ -250,32 +296,29 @@ void play(int **matriz, int x, int y)
             switch (tecla)
             {
                 case 72: case 'w': ///cima
-                    if (matriz[x - 1][y] == 0) {
-                        matriz[x][y] = 0;
+                    /*if (matriz[x - 1][y] == 0) {
                         x--;
-                        matriz[x][y] = 9;
-                    }
+                    }*/
+                    retorna_posicao(matriz, x-1, y, &coletavel_bomba);
                     break;
                 case 80: case 's': ///baixo
-                    if (matriz[x + 1][y] == 0) {
-                        matriz[x][y] = 0;
+                    /*if (matriz[x + 1][y] == 0) {
                         x++;
-                        matriz[x][y] = 9;
-                    }
+                    }*/
+                    retorna_posicao(matriz, x+1, y, &coletavel_bomba);
                     break;
                 case 75:case 'a': ///esquerda
-                    if (matriz[x][y - 1] == 0) {
-                        matriz[x][y] = 0;
+                    /*if (matriz[x][y - 1] == 0) {
                         y--;
-                        matriz[x][y] = 9;
-                    }
+                    }*/
+
+                    retorna_posicao(matriz, x, y-1, &coletavel_bomba);
                     break;
                 case 77: case 'd': ///direita
-                    if (matriz[x][y + 1] == 0) {
-                        matriz[x][y] = 0;
+                    /*if (matriz[x][y + 1] == 0) {
                         y++;
-                        matriz[x][y] = 9;
-                    }
+                    }*/
+                    retorna_posicao(matriz, x, y+1, &coletavel_bomba);
                     break;
                 case 32: case 'space': ///bomba
                     if (tempo == false){
@@ -285,7 +328,13 @@ void play(int **matriz, int x, int y)
                     }
                     break;
                 case 'p':
-                    salva_jogo(matriz, 0);
+                    if(tempo == false)
+                    {
+                        salva_jogo(matriz, 0);
+                    }else
+                    {
+                        cout<<"Não é possível salvar com bomba no mapa";
+                    }
                     system("CLS");
                     /*mostraMenu();
                     escolhaMenu();*/
@@ -360,8 +409,6 @@ void novo_jogo()
 {
     int escolha_dimensao;
     int valido = 0;
-    int x = 1;
-    int y = 1;
 
     cout << "Digite as dimensoes do jogo:\n";
     cout << "1. 15x15\n";
@@ -386,7 +433,8 @@ void novo_jogo()
     }
 
     constroiMatriz(matriz);
-    matriz[1][1] = 9; //DEFINE A POSIÇÃO DO JOGADOR
+    x = 1;
+    y = 1; //DEFINE A POSIÇÃO DO JOGADOR
 
     matriz[linhas - 2][colunas - 2] = 3; //DEFINE AS POSIÇÕES DOS INIMIGOS
     matriz[1][colunas - 2] = 3; //DEFINE AS POSIÇÕES DOS INIMIGOS
@@ -395,12 +443,12 @@ void novo_jogo()
     cout << "\n";
 
 
-    play(matriz, 1, 1);
+    play(matriz);
 }
 
 void carrega_jogo()
 {
-    int x, y;
+    int x, y, segundos_jogados;
     fstream dados_jogo;
     dados_jogo.open("dados_jogo.txt");
 
@@ -409,6 +457,7 @@ void carrega_jogo()
         // if(!is_empty(dados_jogo)){
             dados_jogo >> linhas;
             dados_jogo >> colunas;
+            dados_jogo >> segundos_jogados;
 
             int** matriz = new int*[linhas];
             for (int i = 0; i < linhas; i++) {
@@ -427,7 +476,7 @@ void carrega_jogo()
             }
 
             dados_jogo.close();
-            play(matriz, x, y);
+            play(matriz);
         // }
     }else
     {
