@@ -7,6 +7,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
+#include <stdio.h>
 
 using namespace std;
 
@@ -18,6 +19,7 @@ void sobre_dev();
 
 int ger_num_aleatorio(int valor_max)
 {
+    srand(time(NULL));
     unsigned seed = time(0);
     srand(seed);
     return rand()%valor_max;
@@ -239,11 +241,11 @@ int mostraMatriz(int **matriz, int x, int y)
     }
 }
 
-void salva_jogo(int **matriz, Jogador jogador, int segundos_jogados, int max_paredes_passadas, int total_bombas)
+void salva_jogo(int **matriz, Jogador jogador, int segundos_jogados, int max_paredes_passadas, int total_bombas, string nome_arquivo)
 {
     int count_inimigo = 0;
     fstream dados_jogo;
-    dados_jogo.open("dados_jogo.txt");
+    dados_jogo.open(nome_arquivo);
 
     for(int i = 0; i < linhas; i++){
         for(int j = 0; j < colunas; j++){
@@ -355,9 +357,12 @@ void verifica_bomba(int **matriz, int raio_bomba)
     }
 }
 
-void jogo_finalizado(string mensagem){
+void jogo_finalizado(string mensagem, char nome_arquivo[]){
     system("CLS");
     char opc;
+
+    remove(nome_arquivo);
+
     while(opc != 's' && opc != 'n')
     {
         cout << mensagem << "\n\n";
@@ -389,7 +394,7 @@ int tem_inimigos(int **matriz)
     return inimigos;
 }
 
-void play(int **matriz, Jogador& jogador, Inimigo *inimigos, int num_inimigos , int segundos_jogados , int max_paredes, int total_bomb)
+void play(int **matriz, Jogador& jogador, Inimigo *inimigos, int num_inimigos , int segundos_jogados , int max_paredes, int total_bomb, char nome_arquivo[])
 {
     system("CLS");
     // Configurações de console para ocultar o cursor e reposicionar o cursor
@@ -524,7 +529,7 @@ void play(int **matriz, Jogador& jogador, Inimigo *inimigos, int num_inimigos , 
                         minuto = minuto * 60;
                         tempo_corrido = tempo_corrido + minuto;
                         pause = 1;
-                        salva_jogo(matriz, jogador, tempo_corrido, max_paredes_passadas, total_bombas);
+                        salva_jogo(matriz, jogador, tempo_corrido, max_paredes_passadas, total_bombas, nome_arquivo);
                     }else
                     {
                         system("CLS");
@@ -630,10 +635,10 @@ void play(int **matriz, Jogador& jogador, Inimigo *inimigos, int num_inimigos , 
         mostraMenu();
         escolhaMenu();
     }else if (venceu) {
-        jogo_finalizado("Voce venceu!");
+        jogo_finalizado("Voce venceu!", nome_arquivo);
     }
     else if (!vivo) {
-        jogo_finalizado("Voce perdeu!");
+        jogo_finalizado("Voce perdeu!", nome_arquivo);
     }
 }
 
@@ -642,6 +647,7 @@ void novo_jogo()
     int escolha_dimensao;
     int valido = 0;
     int total_inimigo = 0;
+    char nome_arquivo[50];
 
     system("CLS");
     cout << "Digite as dimensoes do jogo:\n";
@@ -669,6 +675,11 @@ void novo_jogo()
         cin >> total_inimigo;
     }
 
+    system("CLS");
+    cout << "Qual nome do arquivo (OBS.: digite com a extensao)\n";
+    cout << "Nome: ";
+    cin >> nome_arquivo;
+
     int** matriz = new int*[linhas];
     for (int i = 0; i < linhas; i++) {
         matriz[i] = new int[colunas];
@@ -692,18 +703,18 @@ void novo_jogo()
     cout << sizeof matriz;
     cout << "\n";
 
-
-    play(matriz, jogador, inimigos, total_inimigo, 0, 0 , 0);
+    ofstream { nome_arquivo };
+    play(matriz, jogador, inimigos, total_inimigo, 0, 0 , 0, nome_arquivo);
 }
 
-void carrega_jogo()
+void carrega_jogo(char nome_arquivo[])
 {
     int segundos_jogados, max_paredes_passadas, total_bombas;
     int total_inimigos = 0;
     int x , y;
     int count_inimigo = 0;
     fstream dados_jogo;
-    dados_jogo.open("dados_jogo.txt");
+    dados_jogo.open(nome_arquivo);
 
     if (dados_jogo.is_open())
     {
@@ -742,7 +753,7 @@ void carrega_jogo()
             jogador.start(x, y);
 
             dados_jogo.close();
-            play(matriz, jogador, inimigos, total_inimigos, segundos_jogados, max_paredes_passadas, total_bombas);
+            play(matriz, jogador, inimigos, total_inimigos, segundos_jogados, max_paredes_passadas, total_bombas, nome_arquivo);
         //}
     }else
     {
@@ -755,6 +766,7 @@ void escolhaMenu()
 {
     int escolha_menu;
     int valido = 0;
+    char nome_arquivo[50] = {'d','a','d','o','s','_','j','o','g','o','.','t','x','t'};
 
 
     cout << "Digite sua escolha: ";
@@ -766,7 +778,11 @@ void escolhaMenu()
                 novo_jogo();
                 break;
             case 2: // CARREGA JOGO DE UM ARQUIVO
-                carrega_jogo();
+                system("CLS");
+                cout << "Digite o nome do arquivo que voce quer carregar (OBS.: digite com a extensao)\n";
+                cout << "Nome: ";
+                cin >> nome_arquivo;
+                carrega_jogo(nome_arquivo);
             case 3:
                 //SOBRE OS DESENVOLVEDORES
                 sobre_dev();
