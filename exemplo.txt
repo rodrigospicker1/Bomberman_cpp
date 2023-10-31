@@ -1,3 +1,0 @@
-15 //linhas do jogo
-15 //colunas do jogo
-100 // segundos jogados
