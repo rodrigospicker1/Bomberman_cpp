@@ -12,10 +12,146 @@ using namespace std;
 
 int linhas = 0;
 int colunas = 0;
-int x = 0;
-int y = 0;
 
 void escolhaMenu();
+void sobre_dev();
+
+int ger_num_aleatorio(int valor_max)
+{
+    unsigned seed = time(0);
+    srand(seed);
+    return rand()%valor_max;
+}
+
+struct Jogador {
+    int x = 0, y = 0;
+    bool vivo = true;
+
+    void start(int linha, int coluna)
+    {
+        this->x = linha;
+        this->y = coluna;
+    }
+
+    int retorna_posicao(int **matriz, int next_move_x, int next_move_y, int *coletavel_bomba, int *coletavel_parede, int *max_paredes_passadas)
+    {
+        int vivo = 1;
+        if( (matriz[next_move_x][next_move_y] != 1 && matriz[next_move_x][next_move_y] != 2) || (*coletavel_parede == 1 && *max_paredes_passadas > 0) ){
+            this->x = next_move_x;
+            this->y = next_move_y;
+            if(matriz[next_move_x][next_move_y] == 1 || matriz[next_move_x][next_move_y] == 2)
+            {
+                *max_paredes_passadas = *max_paredes_passadas-1;
+            }
+            if(matriz[next_move_x][next_move_y] == 3)
+            {
+                vivo = 0;
+            }
+            if(matriz[next_move_x][next_move_y] == 9)
+            {
+                *coletavel_bomba = 1;
+                matriz[next_move_x][next_move_y] = 0;
+            }else if(matriz[next_move_x][next_move_y] == 10)
+            {
+                *coletavel_parede = 1;
+                matriz[next_move_x][next_move_y] = 0;
+            }
+        }
+        return vivo;
+    }
+
+    void morreu()
+    {
+        this->vivo = false;
+    }
+};
+
+struct Inimigo {
+    int x, y;
+    bool alive = true;
+    bool tempo_inimigo;
+    clock_t inicio_inimigo, fim_inimigo;
+
+    void inserir_no_mapa(int **matriz, int linhas, int colunas)
+    {
+        int posicao_x = 0;
+        int posicao_y = 0;
+        while(matriz[posicao_x][posicao_y] != 0 || (posicao_x < 2 && posicao_y < 2) )
+        {
+            posicao_x = ger_num_aleatorio(linhas-1);
+            posicao_y = ger_num_aleatorio(colunas-1);
+        }
+        // posicao_x < 2 && posicao_y < 2
+
+        matriz[posicao_x][posicao_y] = 3;
+
+        this->x = posicao_x;
+        this->y = posicao_y;
+    }
+
+    int mover(int **matriz, Jogador& jogador)
+    {
+        int vivo;
+        if (this->tempo_inimigo == false)
+        {
+            this->tempo_inimigo = true;
+            this->inicio_inimigo = clock();
+            if (this->x > jogador.x && matriz[this->x - 1][this->y] == 0) {
+                matriz[this->x][this->y] = 0;
+                matriz[this->x - 1][this->y] = 3;
+                x--;
+            }
+            else if (this->y > jogador.y && matriz[this->x][this->y - 1] == 0) {
+                matriz[this->x][this->y] = 0;
+                matriz[this->x][this->y - 1] = 3;
+                y--;
+            }
+            else if (this->x < jogador.x && matriz[this->x + 1][this->y] == 0) {
+                matriz[this->x][this->y] = 0;
+                matriz[this->x + 1][this->y] = 3;
+                x++;
+            }
+            else if (this->y < jogador.y && matriz[this->x][this->y + 1] == 0) {
+                matriz[this->x][this->y] = 0;
+                matriz[this->x][this->y + 1] = 3;
+                y++;
+            }
+            else if (this->x == jogador.x && this->y == jogador.y) {
+                matriz[this->x][this->y] = 0;
+                matriz[this->x + 1][this->y] = 3;
+                vivo = false;
+            }
+            else if (matriz[this->x][this->y + 1] == 0) {
+                matriz[this->x][this->y] = 0;
+                matriz[this->x][this->y + 1] = 3;
+                y++;
+            }
+            else if (matriz[this->x - 1][this->y] == 0) {
+                matriz[this->x][this->y] = 0;
+                matriz[this->x - 1][this->y] = 3;
+                x--;
+            }
+            else if (matriz[this->x][this->y - 1] == 0) {
+                matriz[this->x][this->y] = 0;
+                matriz[this->x][this->y - 1] = 3;
+                y--;
+            }
+            else if (matriz[this->x + 1][this->y] == 0) {
+                matriz[this->x][this->y] = 0;
+                matriz[this->x + 1][this->y] = 3;
+                x++;
+            }
+        }
+        //verifica se o tempo do inimigo está ativo
+        if (this->tempo_inimigo == true) {
+            this->fim_inimigo = clock();
+            if ((fim_inimigo - inicio_inimigo) / CLOCKS_PER_SEC == 1) {
+                tempo_inimigo = false;
+            }
+        }
+        return vivo;
+    }
+};
 
 void mostraMenu()
 {
@@ -25,13 +161,6 @@ void mostraMenu()
     cout << "2. Carregar o jogo salvo" << endl;
     cout << "3. Sobre os desenvolvedores" << endl;
     cout << "4. Exit" << "\n\n";
-}
-
-int ger_num_aleatorio(int valor_max)
-{
-    unsigned seed = time(0);
-    srand(seed);
-    return rand()%valor_max;
 }
 
 // Função para construir a matriz inicial do jogo
@@ -64,8 +193,9 @@ void constroiMatriz(int **matriz) {
         }
     }
 }
+
 // Função para mostrar a matriz do jogo na tela
-int mostraMatriz(int **matriz)
+int mostraMatriz(int **matriz, int x, int y)
 {
     for (int i = 0; i < linhas; i++)
     {
@@ -109,18 +239,29 @@ int mostraMatriz(int **matriz)
     }
 }
 
-void salva_jogo(int **matriz, int segundos_jogados, int max_paredes_passadas, int total_bombas)
+void salva_jogo(int **matriz, Jogador jogador, int segundos_jogados, int max_paredes_passadas, int total_bombas)
 {
+    int count_inimigo = 0;
     fstream dados_jogo;
     dados_jogo.open("dados_jogo.txt");
+
+    for(int i = 0; i < linhas; i++){
+        for(int j = 0; j < colunas; j++){
+            if(matriz[i][j] == 3)
+            {
+                count_inimigo++;
+            }
+        }
+    }
 
     if (dados_jogo.is_open())
     {
         dados_jogo << linhas << "\n";
         dados_jogo << colunas << "\n";
-        dados_jogo << x << "\n";
-        dados_jogo << y << "\n";
+        dados_jogo << jogador.x << "\n";
+        dados_jogo << jogador.y << "\n";
         dados_jogo << segundos_jogados << "\n";
+        dados_jogo << count_inimigo << "\n";
 
         //Salva array do jogo
         for(int i = 0; i < linhas; i++){
@@ -139,27 +280,6 @@ void salva_jogo(int **matriz, int segundos_jogados, int max_paredes_passadas, in
     }else
     {
         cout<<"Falha em abrir o arquivo";
-    }
-}
-
-void retorna_posicao(int **matriz, int next_move_x, int next_move_y, int *coletavel_bomba, int *coletavel_parede, int *max_paredes_passadas)
-{
-    if( (matriz[next_move_x][next_move_y] != 1 && matriz[next_move_x][next_move_y] != 2) || (*coletavel_parede == 1 && *max_paredes_passadas > 0) ){
-        x = next_move_x;
-        y = next_move_y;
-        if(matriz[next_move_x][next_move_y] == 1 || matriz[next_move_x][next_move_y] == 2)
-        {
-            *max_paredes_passadas = *max_paredes_passadas-1;
-        }
-        if(matriz[next_move_x][next_move_y] == 9)
-        {
-            *coletavel_bomba = 1;
-            matriz[next_move_x][next_move_y] = 0;
-        }else if(matriz[next_move_x][next_move_y] == 10)
-        {
-            *coletavel_parede = 1;
-            matriz[next_move_x][next_move_y] = 0;
-        }
     }
 }
 
@@ -235,13 +355,13 @@ void verifica_bomba(int **matriz, int raio_bomba)
     }
 }
 
-void game_over(){
+void jogo_finalizado(string mensagem){
     system("CLS");
     char opc;
-    while(opc != 's' || opc != 'n')
+    while(opc != 's' && opc != 'n')
     {
-        cout << "Você perdeu!\n\n";
-        cout << "Você deseja continuar [s/n]\n";
+        cout << mensagem << "\n\n";
+        cout << "Voce deseja continuar [s/n]\n";
         cout << "?: ";
         cin >> opc;
     }
@@ -254,7 +374,22 @@ void game_over(){
     }
 }
 
-void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
+int tem_inimigos(int **matriz)
+{
+    int inimigos = 1;
+    for (int i = 0; i < linhas; i++)
+    {
+        for (int j = 0; j < colunas; j++)
+        {
+            if(matriz[i][j] == 3){
+                inimigos = 0;
+            }
+        }
+    }
+    return inimigos;
+}
+
+void play(int **matriz, Jogador& jogador, Inimigo *inimigos, int num_inimigos , int segundos_jogados , int max_paredes, int total_bomb)
 {
     system("CLS");
     // Configurações de console para ocultar o cursor e reposicionar o cursor
@@ -272,7 +407,6 @@ void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
     // Variáveis para medir o tempo e controlar o jogo
     clock_t tempo_jogado, total_tempo_jogado;
     clock_t inicio, fim;
-    clock_t inicio_inimigo, fim_inimigo;
     clock_t inicio_coletavel_bomba, fim_coletavel_bomba;
     srand(time(NULL));
 
@@ -280,36 +414,48 @@ void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
 
     char tecla;
     bool tempo = false;
-    bool tempo_inimigo = false;
     int vivo = true;
     int venceu = false;
-    int inimigos = 0;
     int coletavel_bomba = 0;
     int coletavel_parede = 0;
     bool tempo_coletavel_bomba = false;
     int raio_bomba = 1;
     int max_paredes_passadas = 5;
     int total_bombas = 0;
+    int pause = 0;
+    int *x = &jogador.x;
+    int *y = &jogador.y;
+    int minuto = 0;
 
     int posicao1_x = 0;
     int posicao1_y = 0;
 
-    do{
-        posicao1_x = ger_num_aleatorio(linhas-1);
-        posicao1_y = ger_num_aleatorio(colunas-1);
-    }while(matriz[posicao1_x][posicao1_y] != 0 && (posicao1_x != x || posicao1_y != y) );
+    if(segundos_jogados == 0){
+        do{
+            posicao1_x = ger_num_aleatorio(linhas-1);
+            posicao1_y = ger_num_aleatorio(colunas-1);
+        }while(matriz[posicao1_x][posicao1_y] != 0 && (posicao1_x != jogador.x || posicao1_y != jogador.y) );
 
-    if(matriz[posicao1_x][posicao1_y] == 0){
-        matriz[1][2] = 9;
-    }
+        if(matriz[posicao1_x][posicao1_y] == 0){
+            matriz[1][2] = 9;
+            //matriz[posicao1_x][posicao1_y] = 9;
+        }
 
-    do{
-        posicao1_x = ger_num_aleatorio(linhas-1);
-        posicao1_y = ger_num_aleatorio(colunas-1);
-    }while(matriz[posicao1_x][posicao1_y] != 0 && (posicao1_x != x || posicao1_y != y) );
+        do{
+            posicao1_x = ger_num_aleatorio(linhas-1);
+            posicao1_y = ger_num_aleatorio(colunas-1);
+        }while(matriz[posicao1_x][posicao1_y] != 0 && (posicao1_x != jogador.x || posicao1_y != jogador.y) );
 
-    if(matriz[posicao1_x][posicao1_y] == 0){
-        matriz[2][1] = 10;
+        if(matriz[posicao1_x][posicao1_y] == 0){
+            matriz[2][1] = 10;
+            //matriz[posicao1_x][posicao1_y] = 10;
+        }
+    }else
+    {
+        while(segundos_jogados > 59){
+            minuto++;
+            segundos_jogados = segundos_jogados-60;
+        }
     }
 
     tempo_jogado = clock();
@@ -322,120 +468,26 @@ void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
         total_bombas = total_bomb;
     }
 
-    while (vivo && !venceu) {
+    while (vivo && !venceu && !pause) {
         // Posiciona o cursor no início do console e mostra a matriz
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
         total_tempo_jogado = clock();
-        int tempo_corrido = (total_tempo_jogado-tempo_jogado) / CLOCKS_PER_SEC;
-        cout << "Tempo jogado: " << tempo_corrido << "\n\n";
-        mostraMatriz(matriz);
-
-        // Movimento dos inimigos
-        for (int i = 0; i < linhas; i++) {
-            for (int j = 0; j < colunas; j++) {
-                if (matriz[i][j] == 3) {
-                    if (tempo_inimigo == false) {
-                        tempo_inimigo = true;
-                        inicio_inimigo = clock();
-                        // Movimento dos inimigos em direção ao jogador
-                        if (i > x && matriz[i - 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i - 1][j] = 3;
-                        }
-                        else if (j > y && matriz[i][j - 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j - 1] = 3;
-                        }
-                        else if (i < x && matriz[i + 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                        }
-                        else if (j < y && matriz[i][j + 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j + 1] = 3;
-                        }
-                        else if (i == x && j == y) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                            vivo = false;
-                        }
-                        else if (matriz[i][j + 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j + 1] = 3;
-                        }
-                        else if (matriz[i - 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i - 1][j] = 3;
-                        }
-                        else if (matriz[i][j - 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j - 1] = 3;
-                        }
-                        else if (matriz[i + 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                        }
-                    }
-                }
-            }
+        int tempo_corrido = (segundos_jogados) + (total_tempo_jogado-tempo_jogado) / CLOCKS_PER_SEC;
+        if(tempo_corrido > 59)
+        {
+            tempo_jogado = clock();
+            minuto++;
         }
+        cout << "Tempo jogado: " << minuto << "m " << tempo_corrido << "s\n\n";
+        cout << "P -> pausar\n";
+        cout << "~ -> coletavel usado para poder atravessar 5 paredes\n";
+        cout << "% -> coletavel usado para bombas ficarem com raio de 3\n\n";
+        venceu = tem_inimigos(matriz);
+        mostraMatriz(matriz, jogador.x, jogador.y);
 
-        //verifica e controla a explosão de inimigos no jogo
-        for (int i = 0; i < linhas; i++) {
-            for (int j = 0; j < colunas; j++) {
-                if (matriz[i][j] == 6) {
-                        if (tempo_inimigo == false) {
-                        tempo_inimigo = true;
-                        inicio_inimigo = clock();
-                        if (i > x && matriz[i - 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i - 1][j] = 3;
-                        }
-                        else if (j > y && matriz[i][j - 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j - 1] = 3;
-                        }
-                        else if (i < x && matriz[i + 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                        }
-                        else if (j < y && matriz[i][j + 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j + 1] = 3;
-                        }
-                        else if (i == x && j == y) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                            vivo = false;
-                        }
-                        else if (matriz[i][j + 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j + 1] = 3;
-                        }
-                        else if (matriz[i - 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i - 1][j] = 3;
-                        }
-                        else if (matriz[i][j - 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j - 1] = 3;
-                        }
-                        else if (matriz[i + 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                        }
-                    }
-                }
-            }
-        }
-
-        //verifica se o tempo do inimigo está ativo
-        if (tempo_inimigo == true) {
-            fim_inimigo = clock();
-            if ((fim_inimigo - inicio_inimigo) / CLOCKS_PER_SEC == 1) {
-                // Aperece o amarelo no raio de destruição
-                tempo_inimigo = false;
-            }
+        for(int i = 0; i < num_inimigos; i++)
+        {
+            vivo = inimigos[i].mover(matriz, jogador);
         }
 
         //executa os movimentos
@@ -444,33 +496,20 @@ void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
             switch (tecla)
             {
                 case 72: case 'w': ///cima
-                    /*if (matriz[x - 1][y] == 0) {
-                        x--;
-                    }*/
-                    retorna_posicao(matriz, x-1, y, &coletavel_bomba, &coletavel_parede, &max_paredes_passadas);
+                    vivo = jogador.retorna_posicao(matriz, *x-1, *y, &coletavel_bomba, &coletavel_parede, &max_paredes_passadas);
                     break;
                 case 80: case 's': ///baixo
-                    /*if (matriz[x + 1][y] == 0) {
-                        x++;
-                    }*/
-                    retorna_posicao(matriz, x+1, y, &coletavel_bomba, &coletavel_parede, &max_paredes_passadas);
+                    vivo = jogador.retorna_posicao(matriz, *x+1, *y, &coletavel_bomba, &coletavel_parede, &max_paredes_passadas);
                     break;
                 case 75:case 'a': ///esquerda
-                    /*if (matriz[x][y - 1] == 0) {
-                        y--;
-                    }*/
-
-                    retorna_posicao(matriz, x, y-1, &coletavel_bomba,  &coletavel_parede, &max_paredes_passadas);
+                    vivo = jogador.retorna_posicao(matriz, *x, *y-1, &coletavel_bomba,  &coletavel_parede, &max_paredes_passadas);
                     break;
                 case 77: case 'd': ///direita
-                    /*if (matriz[x][y + 1] == 0) {
-                        y++;
-                    }*/
-                    retorna_posicao(matriz, x, y+1, &coletavel_bomba,  &coletavel_parede, &max_paredes_passadas);
+                    vivo = jogador.retorna_posicao(matriz, *x, *y+1, &coletavel_bomba,  &coletavel_parede, &max_paredes_passadas);
                     break;
                 case 32: case 'space': ///bomba
                     if (tempo == false){
-                        matriz[x][y] = 4;
+                        matriz[*x][*y] = 4;
                         inicio = clock();
                         tempo = true;
                         if(coletavel_bomba == 1)
@@ -482,14 +521,15 @@ void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
                 case 'p':
                     if(tempo == false)
                     {
-                        salva_jogo(matriz, tempo_corrido, max_paredes_passadas, total_bombas);
+                        minuto = minuto * 60;
+                        tempo_corrido = tempo_corrido + minuto;
+                        pause = 1;
+                        salva_jogo(matriz, jogador, tempo_corrido, max_paredes_passadas, total_bombas);
                     }else
                     {
-                        cout<<"Não é possível salvar com bomba no mapa";
+                        system("CLS");
+                        cout<<"\nNao e possivel salvar com bomba no mapa\n";
                     }
-                    system("CLS");
-                    /*mostraMenu();
-                    escolhaMenu();*/
                     break;
             }
         }
@@ -499,7 +539,7 @@ void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
         {
             cout << "Bombas com raio 3 restante: " << 3 - total_bombas << "\n";
             raio_bomba = 3;
-            if (total_bombas == 3)
+            if (total_bombas == 4)
             {
                 raio_bomba = 1;
                 coletavel_bomba = 0;
@@ -514,44 +554,44 @@ void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
             {
                 system("CLS");
                 coletavel_parede = 0;
-                if(matriz[x][y] != 0){
+                if(matriz[*x][*y] != 0){
                     int feito = 0;
-                    for(int i = x; i >= 0; i--){
-                        if(matriz[i][y] == 0 && feito == 0){
+                    for(int i = *x; i >= 0; i--){
+                        if(matriz[i][*y] == 0 && feito == 0){
                             feito = 1;
-                            x = i;
+                            *x = i;
                         }
                     }
                     if(feito == 0)
                     {
-                        for(int i = y; i < colunas; i++){
-                            if(matriz[i][y] == 0 && feito == 0){
+                        for(int i = *y; i < colunas; i++){
+                            if(matriz[i][*y] == 0 && feito == 0){
                                 feito = 1;
-                                y = i;
+                                *y = i;
                             }
                         }
                     }
                     if(feito == 0)
                     {
-                        for(int i = y; i >= 0; i--){
-                            if(matriz[x][i] == 0 && feito == 0){
+                        for(int i = *y; i >= 0; i--){
+                            if(matriz[*x][i] == 0 && feito == 0){
                                 feito = 1;
-                                y = i;
+                                *y = i;
                             }
                         }
                     }
                     if(feito == 0)
                     {
-                        for(int i = x; i < linhas; i++){
-                            if(matriz[i][y] == 0 && feito == 0){
+                        for(int i = *x; i < linhas; i++){
+                            if(matriz[i][*y] == 0 && feito == 0){
                                 feito = 1;
-                                x = i;
+                                *x = i;
                             }
                         }
                     }
                     if(feito == 0){
-                        x = 1;
-                        y = 1;
+                        *x = 1;
+                        *y = 1;
                     }
                 }
             }
@@ -562,28 +602,7 @@ void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
         if (tempo == true) {
             fim = clock();
             if ((fim - inicio) / CLOCKS_PER_SEC == 3) {
-                // Aperece o amarelo no raio de destruição
                 verifica_bomba(matriz, raio_bomba);
-                /*
-                for (int i = 0; i < linhas; i++) {
-                    for (int j = 0; j < colunas; j++) {
-                        if (matriz[i][j] == 4) {
-                            if (matriz[i - 1][j] != 1) {
-                                matriz[i - 1][j] = 5;
-                            }
-                            if (matriz[i + 1][j] != 1) {
-                                matriz[i + 1][j] = 5;
-                            }
-                            if (matriz[i][j - 1] != 1) {
-                                matriz[i][j - 1] = 5;
-                            }
-                            if (matriz[i][j + 1] != 1) {
-                                matriz[i][j + 1] = 5;
-                            }
-                        }
-                    }
-                }
-                */
 
             }
             if ((fim - inicio) / CLOCKS_PER_SEC == 4) {
@@ -592,25 +611,29 @@ void play(int **matriz, int segundos_jogados , int max_paredes, int total_bomb)
                     for (int j = 0; j < colunas; j++) {
                         if (matriz[i][j] == 4 || matriz[i][j] == 5) {
                             matriz[i][j] = 0;
-                            if (i == x && j == y) {
+                            if (i == *x && j == *y) {
                                 vivo = false;
                             }
                         }
                     }
                 }
                 tempo = false;
+                system("CLS");
             }
         }
 
 
     } //fim do jogo
 
-    system("cls");
-    if (venceu) {
-        cout << "Voce venceu";
+    system("CLS");
+    if(pause){
+        mostraMenu();
+        escolhaMenu();
+    }else if (venceu) {
+        jogo_finalizado("Voce venceu!");
     }
     else if (!vivo) {
-        game_over();
+        jogo_finalizado("Voce perdeu!");
     }
 }
 
@@ -618,7 +641,9 @@ void novo_jogo()
 {
     int escolha_dimensao;
     int valido = 0;
+    int total_inimigo = 0;
 
+    system("CLS");
     cout << "Digite as dimensoes do jogo:\n";
     cout << "1. 15x15\n";
     cout << "2. 9x9\n\n";
@@ -636,39 +661,62 @@ void novo_jogo()
         novo_jogo();
     }
 
+    system("CLS");
+    while(total_inimigo == 0 || total_inimigo > 5)
+    {
+        cout << "Quantos inimigos? (MAX: 5):\n";
+        cout << "Escolha: ";
+        cin >> total_inimigo;
+    }
+
     int** matriz = new int*[linhas];
     for (int i = 0; i < linhas; i++) {
         matriz[i] = new int[colunas];
     }
 
     constroiMatriz(matriz);
-    x = 1;
-    y = 1; //DEFINE A POSIÇÃO DO JOGADOR
+    Jogador jogador;
+    jogador.start(1, 1); //DEFINE A POSIÇÃO DO JOGADOR
 
-    matriz[linhas - 2][colunas - 2] = 3; //DEFINE AS POSIÇÕES DOS INIMIGOS
-    matriz[1][colunas - 2] = 3; //DEFINE AS POSIÇÕES DOS INIMIGOS
+    Inimigo inimigos[total_inimigo];
+    for(int a = 0; a < total_inimigo; a++)
+    {
+        //cout << a << " ";
+        inimigos[a].inserir_no_mapa(matriz, linhas, colunas);
+        //cout << inimigos[a].x << " ";
+        //cout << inimigos[a].y << " \n\n";
+        //inimigos[a].x = 14;
+        //inimigos[a].y = 14;
+    }
 
     cout << sizeof matriz;
     cout << "\n";
 
 
-    play(matriz, 0 , 0);
+    play(matriz, jogador, inimigos, total_inimigo, 0, 0 , 0);
 }
 
 void carrega_jogo()
 {
     int segundos_jogados, max_paredes_passadas, total_bombas;
+    int total_inimigos = 0;
+    int x , y;
+    int count_inimigo = 0;
     fstream dados_jogo;
     dados_jogo.open("dados_jogo.txt");
 
     if (dados_jogo.is_open())
     {
-        // if(!is_empty(dados_jogo)){
+        //if(!is_empty(dados_jogo)){
             dados_jogo >> linhas;
             dados_jogo >> colunas;
             dados_jogo >> x;
             dados_jogo >> y;
             dados_jogo >> segundos_jogados;
+            dados_jogo >> total_inimigos;
+
+            total_inimigos;
+            Inimigo inimigos[total_inimigos];
 
             int** matriz = new int*[linhas];
             for (int i = 0; i < linhas; i++) {
@@ -678,10 +726,11 @@ void carrega_jogo()
             for(int i = 0; i < linhas; i++){
                 for(int j = 0; j < colunas; j++){
                     dados_jogo>>matriz[i][j];
-                    cout << matriz[i][j] << " | ";
-                    if(matriz[i][j] == 9){
-                        x = i;
-                        y = j;
+                    if(matriz[i][j] == 3)
+                    {
+                        inimigos[count_inimigo].x = i;
+                        inimigos[count_inimigo].y = j;
+                        count_inimigo++;
                     }
                 }
             }
@@ -689,9 +738,12 @@ void carrega_jogo()
             dados_jogo >> max_paredes_passadas;
             dados_jogo >> total_bombas;
 
+            Jogador jogador;
+            jogador.start(x, y);
+
             dados_jogo.close();
-            play(matriz, max_paredes_passadas, total_bombas);
-        // }
+            play(matriz, jogador, inimigos, total_inimigos, segundos_jogados, max_paredes_passadas, total_bombas);
+        //}
     }else
     {
         cout<<"Falha em abrir o arquivo";
@@ -716,7 +768,11 @@ void escolhaMenu()
             case 2: // CARREGA JOGO DE UM ARQUIVO
                 carrega_jogo();
             case 3:
+                //SOBRE OS DESENVOLVEDORES
+                sobre_dev();
             case 4:
+                //SAIR
+                exit(1);
             default:
                 cout << "Escolha invalida!\n";
                 mostraMenu();
@@ -724,253 +780,29 @@ void escolhaMenu()
     }
 }
 
-
+void sobre_dev()
+{
+    char opc;
+    while(opc != 's')
+    {
+        system("CLS");
+        cout << "Ola, nos somos estudantes de ciencias da computacaoo na UNIVALI e desenvolvemos um bomberman em c++.\n\n";
+        cout << "Meu nome eh Victor e tenho 19 anos.";
+        cout << "Sou desenvolvedor Fullstack, ";
+        cout << "tenho curso tecnico de Desenvolvimento de Sistemas, e atualmente curso Ciencias da computacao.\n";
+        cout << "E eu sou o Rodrigo tenho 18 anos, sou desenvolvedor front-end e back-end e voce pode me encontrar em \n https://www.linkedin.com/in/rodrigospicker/.\n\n";
+        cout << "Digite 's' para sair :";
+        cin >> opc;
+    }
+    system("CLS");
+    mostraMenu();
+    escolhaMenu();
+}
 
 int main() {
-
-    // Configurações de console para ocultar o cursor e reposicionar o cursor
-    HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_CURSOR_INFO cursorInfo;
-    GetConsoleCursorInfo(out, &cursorInfo);
-    cursorInfo.bVisible = false;
-    SetConsoleCursorInfo(out, &cursorInfo);
-
-    short int CX = 0, CY = 0;
-    COORD coord;
-    coord.X = CX;
-    coord.Y = CY;
-
-    // Variáveis para medir o tempo e controlar o jogo
-    clock_t inicio, fim;
-    clock_t inicio_inimigo, fim_inimigo;
-    srand(time(NULL));
-
-    char tecla;
-    bool tempo = false;
-    bool tempo_inimigo = false;
-    int vivo = true;
-    int venceu = false;
-    int inimigos = 0;
 
     mostraMenu();
     escolhaMenu();
 
-    /*
-    do{
-
-        cin >> escolha_menu;
-
-        if(escolha_menu == 1){
-
-        }elseif(escolha_menu == 2){
-
-        }
-    }while (escolha_menu != 4);
-    */
-    exit(1);
-
-    /*
-
-    while (vivo && !venceu) {
-        // Posiciona o cursor no início do console e mostra a matriz
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-        mostraMatriz(matriz, 15, 15, x, y);
-
-        // Movimento dos inimigos
-        for (int i = 0; i < linhas; i++) {
-            for (int j = 0; j < colunas; j++) {
-                if (matriz[i][j] == 3) {
-                    if (tempo_inimigo == false) {
-                        tempo_inimigo = true;
-                        inicio_inimigo = clock();
-                        // Movimento dos inimigos em direção ao jogador
-                        if (i > x && matriz[i - 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i - 1][j] = 3;
-                        }
-                        else if (j > y && matriz[i][j - 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j - 1] = 3;
-                        }
-                        else if (i < x && matriz[i + 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                        }
-                        else if (j < y && matriz[i][j + 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j + 1] = 3;
-                        }
-                        else if (i == x && j == y) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                            vivo = false;
-                        }
-                        else if (matriz[i][j + 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j + 1] = 3;
-                        }
-                        else if (matriz[i - 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i - 1][j] = 3;
-                        }
-                        else if (matriz[i][j - 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j - 1] = 3;
-                        }
-                        else if (matriz[i + 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                        }
-                    }
-                }
-            }
-        }
-
-        //verifica e controla a explosão de inimigos no jogo
-        for (int i = 0; i < linhas; i++) {
-            for (int j = 0; j < colunas; j++) {
-                if (matriz[i][j] == 6) {
-                        if (tempo_inimigo == false) {
-                        tempo_inimigo = true;
-                        inicio_inimigo = clock();
-                        if (i > x && matriz[i - 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i - 1][j] = 3;
-                        }
-                        else if (j > y && matriz[i][j - 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j - 1] = 3;
-                        }
-                        else if (i < x && matriz[i + 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                        }
-                        else if (j < y && matriz[i][j + 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j + 1] = 3;
-                        }
-                        else if (i == x && j == y) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                            vivo = false;
-                        }
-                        else if (matriz[i][j + 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j + 1] = 3;
-                        }
-                        else if (matriz[i - 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i - 1][j] = 3;
-                        }
-                        else if (matriz[i][j - 1] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i][j - 1] = 3;
-                        }
-                        else if (matriz[i + 1][j] == 0) {
-                            matriz[i][j] = 0;
-                            matriz[i + 1][j] = 3;
-                        }
-                    }
-                }
-            }
-        }
-
-        //verifica se o tempo do inimigo está ativo
-        if (tempo_inimigo == true) {
-            fim_inimigo = clock();
-            if ((fim_inimigo - inicio_inimigo) / CLOCKS_PER_SEC == 1) {
-                // Aperece o amarelo no raio de destruição
-                tempo_inimigo = false;
-            }
-        }
-
-        //executa os movimentos
-        if (_kbhit()) {
-            tecla = getch();
-            switch (tecla) {
-            case 72: case 'w': ///cima
-                if (matriz[x - 1][y] == 0) {
-                    x--;
-                }
-                break;
-            case 80: case 's': ///baixo
-                if (matriz[x + 1][y] == 0) {
-                    x++;
-                }
-                break;
-            case 75:case 'a': ///esquerda
-                if (matriz[x][y - 1] == 0) {
-                    y--;
-                }
-                break;
-            case 77: case 'd': ///direita
-                if (matriz[x][y + 1] == 0) {
-                    y++;
-                }
-                break;
-            case 32: case 'space': ///bomba
-                if (tempo == false) {
-                    matriz[x][y] = 4;
-                    inicio = clock();
-                    tempo = true;
-                }
-                break;
-            case 'p':
-                salva_jogo();
-            }
-        }
-
-        //verifica se o tempo de uma bomba está ativo
-        if (tempo == true) {
-            fim = clock();
-            if ((fim - inicio) / CLOCKS_PER_SEC == 3) {
-                // Aperece o amarelo no raio de destruição
-                for (int i = 0; i < linhas; i++) {
-                    for (int j = 0; j < colunas; j++) {
-                        if (matriz[i][j] == 4) {
-                            if (matriz[i - 1][j] != 1) {
-                                matriz[i - 1][j] = 5;
-                            }
-                            if (matriz[i + 1][j] != 1) {
-                                matriz[i + 1][j] = 5;
-                            }
-                            if (matriz[i][j - 1] != 1) {
-                                matriz[i][j - 1] = 5;
-                            }
-                            if (matriz[i][j + 1] != 1) {
-                                matriz[i][j + 1] = 5;
-                            }
-                        }
-                    }
-                }
-
-            }
-            if ((fim - inicio) / CLOCKS_PER_SEC == 4) {
-                // Volta para o fundo normal
-                for (int i = 0; i < linhas; i++) {
-                    for (int j = 0; j < colunas; j++) {
-                        if (matriz[i][j] == 4 || matriz[i][j] == 5) {
-                            matriz[i][j] = 0;
-                            if (i == x && j == y) {
-                                vivo = false;
-                            }
-                        }
-                    }
-                }
-                tempo = false;
-            }
-        }
-
-
-    } //fim do jogo
-
-    system("cls");
-    if (venceu) {
-        cout << "Voce venceu";
-    }
-    else if (!vivo) {
-        cout << "Game over";
-    }
-    */
     return 0;
 }
