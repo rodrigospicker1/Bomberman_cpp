@@ -11,6 +11,8 @@
 
 using namespace std;
 
+HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
 int linhas = 0;
 int colunas = 0;
 
@@ -204,25 +206,42 @@ int mostraMatriz(int **matriz, int x, int y)
         for (int j = 0; j < colunas; j++)
         {
             if(i==x && j==y){
-                //cout<<char(2); //personagem
-                cout<<"*"; //personagem
+                SetConsoleTextAttribute(hConsole, 112);
+                cout<<char(2); //personagem
+                //cout<<"*"; //personagem
             } else
             {
                 switch (matriz[i][j])
                 {
-                    /*
-                    case 0: cout << " "; break; // Caminho
-                    case 1: cout << char(219); break; // Parede
-                    case 2: cout << char(178); break; // Parede frágil
-                    case 3: cout << char(1); break; // Inimigo
-                    case 4: cout << char(15); break; // Bomba
-                    case 5: cout << char(15); break; // Explosão
+
+
+                    case 0:
+                         SetConsoleTextAttribute(hConsole, 112);
+                         cout << " "; break; // Caminho
+
+                    case 1: SetConsoleTextAttribute(hConsole, 118);
+                            cout << char(219); break; // Parede
+
+                    case 2:
+                        SetConsoleTextAttribute(hConsole, 118);
+                        cout << char(178); break; // Parede frágil
+
+                    case 3:
+                        SetConsoleTextAttribute(hConsole, 124);
+                        cout << char(1); break; // Inimigo
+                    case 4:
+                        SetConsoleTextAttribute(hConsole, 126);
+                        cout << char(15); break; // Bomba
+
+                    case 5:
+                         SetConsoleTextAttribute(hConsole, 124);
+                         cout << char(15); break; // Explosão
                     case 6: cout << char(1); break; // Inimigo (explodindo)
                     case 7: cout << char(15); break; // Bomba (explodindo)
                     case 8: cout << char(15); break; // Explosão (fade out)
-                    case 9: cout << char(2); break; // Personagem
-                    case 10: cout << char(2); break; // Personagem
-                    */
+                    case 9: cout << char(3); break; // Coletável aumenta raio de bomba
+                    case 10: cout << char(5); break; // Coletável atravesar parede
+                    /*
                     case 0: cout << " "; break; // Caminho
                     case 1: cout << "#"; break; // Parede
                     case 2: cout << "="; break; // Parede frágil
@@ -234,6 +253,7 @@ int mostraMatriz(int **matriz, int x, int y)
                     case 8: cout << "@"; break; // Explosão (fade out)
                     case 9: cout << "%"; break; // Coletável aumenta raio de bomba
                     case 10: cout << "~"; break; // Coletável atravesar parede
+                    */
                 }
             }
         }
@@ -442,8 +462,8 @@ void play(int **matriz, Jogador& jogador, Inimigo *inimigos, int num_inimigos , 
         }while(matriz[posicao1_x][posicao1_y] != 0 && (posicao1_x != jogador.x || posicao1_y != jogador.y) );
 
         if(matriz[posicao1_x][posicao1_y] == 0){
-            matriz[1][2] = 9;
-            //matriz[posicao1_x][posicao1_y] = 9;
+            //matriz[1][2] = 9;
+            matriz[posicao1_x][posicao1_y] = 9;
         }
 
         do{
@@ -452,8 +472,8 @@ void play(int **matriz, Jogador& jogador, Inimigo *inimigos, int num_inimigos , 
         }while(matriz[posicao1_x][posicao1_y] != 0 && (posicao1_x != jogador.x || posicao1_y != jogador.y) );
 
         if(matriz[posicao1_x][posicao1_y] == 0){
-            matriz[2][1] = 10;
-            //matriz[posicao1_x][posicao1_y] = 10;
+            //matriz[2][1] = 10;
+            matriz[posicao1_x][posicao1_y] = 10;
         }
     }else
     {
@@ -485,8 +505,8 @@ void play(int **matriz, Jogador& jogador, Inimigo *inimigos, int num_inimigos , 
         }
         cout << "Tempo jogado: " << minuto << "m " << tempo_corrido << "s\n\n";
         cout << "P -> pausar\n";
-        cout << "~ -> coletavel usado para poder atravessar 5 paredes\n";
-        cout << "% -> coletavel usado para bombas ficarem com raio de 3\n\n";
+        cout << char(5) << " -> coletavel usado para poder atravessar 5 paredes\n";
+        cout << char(3) << " -> coletavel usado para bombas ficarem com raio de 3\n\n";
         venceu = tem_inimigos(matriz);
         mostraMatriz(matriz, jogador.x, jogador.y);
 
@@ -704,6 +724,7 @@ void novo_jogo()
     cout << "\n";
 
     ofstream { nome_arquivo };
+    salva_jogo(matriz, jogador, 0, 0, 0, nome_arquivo);
     play(matriz, jogador, inimigos, total_inimigo, 0, 0 , 0, nome_arquivo);
 }
 
